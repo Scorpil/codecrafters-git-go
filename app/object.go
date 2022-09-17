@@ -45,6 +45,7 @@ func ReadObject(objectName string) (Object, error) {
 	if err != nil {
 		return Object{}, err
 	}
+	type_ = type_[0 : len(type_)-1]
 
 	sizeStr, err := objectReader.ReadString(0)
 	if err != nil {

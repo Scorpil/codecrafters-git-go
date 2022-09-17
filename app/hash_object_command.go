@@ -21,7 +21,7 @@ func (c HashObjectCommand) Run(args []string) error {
 }
 
 func (c HashObjectCommand) parseFlags(args []string) hashObjectParams {
-	hashObjectCmd := flag.NewFlagSet("hash-object", flag.ExitOnError)
+	hashObjectCmd := flag.NewFlagSet(c.Name(), flag.ExitOnError)
 	writePtr := hashObjectCmd.Bool("w", false, "Actually write the object into the object database.")
 
 	hashObjectCmd.Parse(args)

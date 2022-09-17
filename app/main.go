@@ -20,7 +20,8 @@ func main() {
 
 	initCommand := InitCommand{}
 	catFileCommad := CatFileCommad{}
-	HashObjectCommand := HashObjectCommand{}
+	hashObjectCommand := HashObjectCommand{}
+	lsTreeCommand := LsTreeCommand{}
 
 	if len(os.Args) < 2 {
 		fmt.Println("Usage: git <command> [<args>]")
@@ -34,8 +35,10 @@ func main() {
 		err = initCommand.Run(os.Args[2:])
 	case catFileCommad.Name():
 		err = catFileCommad.Run(os.Args[2:])
-	case HashObjectCommand.Name():
-		err = HashObjectCommand.Run(os.Args[2:])
+	case hashObjectCommand.Name():
+		err = hashObjectCommand.Run(os.Args[2:])
+	case lsTreeCommand.Name():
+		err = lsTreeCommand.Run(os.Args[2:])
 	default:
 		err = errors.New(fmt.Sprintf("Unknown command %s\n", command))
 	}
