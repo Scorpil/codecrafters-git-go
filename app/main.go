@@ -2,10 +2,13 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"compress/zlib"
+	"crypto/sha1"
+	"encoding/hex"
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -21,8 +24,12 @@ type Object struct {
 	content []byte
 }
 
+func getObjectPath(objectName string) string {
+	return filepath.Join(GIT_BASE, OBJECTS, objectName[0:2], objectName[2:])
+}
+
 func ReadObject(objectName string) (Object, error) {
-	objectPath := filepath.Join(GIT_BASE, OBJECTS, objectName[0:2], objectName[2:])
+	objectPath := getObjectPath(objectName)
 	if _, err := os.Stat(objectPath); err != nil {
 		// object file does not exist
 		return Object{}, err
@@ -63,11 +70,37 @@ func ReadObject(objectName string) (Object, error) {
 	return Object{string(typeBytes), content}, nil
 }
 
+func WriteObject(objectName string, content []byte) error {
+	objectPath := getObjectPath(objectName)
+	if err := os.MkdirAll(filepath.Dir(objectPath), 0755); err != nil {
+		return err
+	}
+	return os.WriteFile(objectPath, content, 0644)
+}
+
+func (o Object) Marshal() (string, []byte, error) {
+	var b bytes.Buffer
+	hasher := sha1.New()
+	zlibWriter := zlib.NewWriter(&b)
+	w := io.MultiWriter(zlibWriter, hasher)
+
+	fmt.Fprintf(w, "blob %d", len(o.content))
+	w.Write([]byte{0})
+	w.Write(o.content)
+	zlibWriter.Close()
+
+	hashStr := hex.EncodeToString(hasher.Sum(nil))
+	return hashStr, b.Bytes(), nil
+}
+
 func main() {
 	initCmd := flag.NewFlagSet("init", flag.ExitOnError)
 
 	catFileCmd := flag.NewFlagSet("cat-file", flag.ExitOnError)
-	prettyPrintPtr := catFileCmd.Bool("p", false, "pretty-print object's content")
+	prettyPrintPtr := catFileCmd.Bool("p", false, "Pretty-print the contents of an object based on its type.")
+
+	hashObjectCmd := flag.NewFlagSet("hash-object", flag.ExitOnError)
+	writePtr := hashObjectCmd.Bool("w", false, "Actually write the object into the object database.")
 
 	flag.Parse()
 
@@ -89,7 +122,7 @@ func main() {
 		}
 
 		headFileContents := []byte("ref: refs/heads/master\n")
-		if err := ioutil.WriteFile(filepath.Join(GIT_BASE, HEAD), headFileContents, 0644); err != nil {
+		if err := os.WriteFile(filepath.Join(GIT_BASE, HEAD), headFileContents, 0644); err != nil {
 			fmt.Fprintf(os.Stderr, "Error writing file: %s\n", err)
 		}
 
@@ -112,6 +145,38 @@ func main() {
 				fmt.Print(string(object.content))
 			}
 		}
+	case hashObjectCmd.Name():
+		hashObjectCmd.Parse(os.Args[2:])
+
+		tail := hashObjectCmd.Args()
+		if len(tail) != 1 {
+			hashObjectCmd.Usage()
+			os.Exit(2)
+		}
+		filePath := tail[0]
+
+		fileContent, err := os.ReadFile(filePath)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "failed to read file: %s", err)
+			os.Exit(1)
+		}
+
+		object := Object{"blob", fileContent}
+		objectName, objectBytes, err := object.Marshal()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error while encoding an object %s", err)
+			os.Exit(1)
+		}
+
+		if *writePtr {
+			if err := WriteObject(objectName, objectBytes); err != nil {
+				fmt.Fprintf(os.Stderr, "error while writing an object %s", err)
+				os.Exit(1)
+			}
+		}
+
+		fmt.Println(objectName)
+
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown command %s\n", command)
 		os.Exit(2)
