@@ -23,6 +23,7 @@ func main() {
 	hashObjectCommand := HashObjectCommand{}
 	lsTreeCommand := LsTreeCommand{}
 	writeTreeCommand := WriteTreeCommand{}
+	commitTreeCommand := CommitTreeCommand{}
 
 	if len(os.Args) < 2 {
 		fmt.Println("Usage: git <command> [<args>]")
@@ -42,6 +43,8 @@ func main() {
 		err = lsTreeCommand.Run(os.Args[2:])
 	case writeTreeCommand.Name():
 		err = writeTreeCommand.Run(os.Args[2:])
+	case commitTreeCommand.Name():
+		err = commitTreeCommand.Run(os.Args[2:])
 	default:
 		err = errors.New(fmt.Sprintf("Unknown command %s\n", command))
 	}

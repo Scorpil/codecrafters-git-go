@@ -8,28 +8,6 @@ import (
 	"path/filepath"
 )
 
-// readDir reads a directory and returns and array of FileInfo structs
-func readDir(dir string) ([]os.FileInfo, error) {
-	dirContents, err := os.ReadDir(dir)
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("Failed to read directory contents: %s", err.Error()))
-	}
-
-	fileInfos := make([]os.FileInfo, 0, len(dirContents))
-	for _, dirEntry := range dirContents {
-		fileInfo, err := dirEntry.Info()
-		if err != nil {
-			return nil, err
-		}
-
-		// do not include .git directory
-		if fileInfo.Name() != GIT_BASE {
-			fileInfos = append(fileInfos, fileInfo)
-		}
-	}
-	return fileInfos, nil
-}
-
 type WriteTreeCommand struct{}
 
 type writeTreeParams struct {
@@ -100,4 +78,26 @@ func (c WriteTreeCommand) runWithParams(p writeTreeParams) ([]byte, error) {
 	WriteObject(hashStr, objectBytes)
 
 	return hash, nil
+}
+
+// readDir reads a directory and returns and array of FileInfo structs
+func readDir(dir string) ([]os.FileInfo, error) {
+	dirContents, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("Failed to read directory contents: %s", err.Error()))
+	}
+
+	fileInfos := make([]os.FileInfo, 0, len(dirContents))
+	for _, dirEntry := range dirContents {
+		fileInfo, err := dirEntry.Info()
+		if err != nil {
+			return nil, err
+		}
+
+		// do not include .git directory
+		if fileInfo.Name() != GIT_BASE {
+			fileInfos = append(fileInfos, fileInfo)
+		}
+	}
+	return fileInfos, nil
 }
