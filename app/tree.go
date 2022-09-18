@@ -5,17 +5,37 @@ import (
 	"bytes"
 	"encoding/hex"
 	"io"
+	"os"
 )
 
-type Tree struct {
-	Items []TreeItem
-	Hash  string
-}
+const (
+	MODE_FILE = "100644" // normal file mode
+	MODE_EXEC = "100755" // executable file mode
+	MODE_LINK = "120000" // symbolic link mode
+	MODE_DIR  = "040000" // directory mode
+)
 
 type TreeItem struct {
 	Mode     string
 	Filename string
 	Hash     string
+}
+
+type Tree struct {
+	Items []TreeItem
+}
+
+func (t Tree) Marshal() {
+	// TODO
+}
+
+func FileInfoToGitMode(info os.FileInfo) string {
+	if info.IsDir() {
+		return MODE_DIR
+	}
+	// TODO: implement MODE_EXEC, MODE_LINK and submodule mode
+	return MODE_FILE
+
 }
 
 func ReadTree(hash string) (Tree, error) {
@@ -28,7 +48,6 @@ func ReadTree(hash string) (Tree, error) {
 
 	tree := Tree{
 		make([]TreeItem, 0),
-		hash,
 	}
 
 	for {
@@ -51,8 +70,8 @@ func ReadTree(hash string) (Tree, error) {
 		}
 
 		treeItem := TreeItem{
-			mode[:len(mode)-1],
-			filename[:len(filename)-1],
+			mode[:len(mode)-1],         // Remove the trailing null byte
+			filename[:len(filename)-1], // Remove the trailing null byte
 			hex.EncodeToString([]byte(targetHash))}
 		tree.Items = append(tree.Items, treeItem)
 	}

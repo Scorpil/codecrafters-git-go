@@ -17,7 +17,21 @@ type LsTreeCommand struct{}
 func (c LsTreeCommand) Name() string { return "ls-tree" }
 
 func (c LsTreeCommand) Run(args []string) error {
-	return c.runWithParams(c.parseFlags(args))
+	p := c.parseFlags(args)
+	tree, err := ReadTree(p.hash)
+
+	if err != nil {
+		return errors.New(fmt.Sprintf("Failed to read a tree %s\n", p.hash))
+	}
+
+	for _, item := range tree.Items {
+		if p.nameOnly {
+			fmt.Println(item.Filename)
+		}
+		// TODO: implement default output (without --names-only flag)
+	}
+
+	return nil
 }
 
 func (c LsTreeCommand) parseFlags(args []string) lsTreeParams {
@@ -34,16 +48,4 @@ func (c LsTreeCommand) parseFlags(args []string) lsTreeParams {
 	hash := tail[0]
 
 	return lsTreeParams{*nameOnlyPtr, hash}
-}
-
-func (c LsTreeCommand) runWithParams(p lsTreeParams) error {
-	tree, err := ReadTree(p.hash)
-	if err != nil {
-		return errors.New(fmt.Sprint("Failed to read a tree %s", p.hash))
-	}
-
-	for _, item := range tree.Items {
-		fmt.Println(item.Filename)
-	}
-	return nil
 }

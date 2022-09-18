@@ -17,7 +17,11 @@ type HashObjectCommand struct{}
 func (c HashObjectCommand) Name() string { return "hash-object" }
 
 func (c HashObjectCommand) Run(args []string) error {
-	return c.runWithParams(c.parseFlags(args))
+	objectName, err := c.runWithParams(c.parseFlags(args))
+	if err == nil {
+		fmt.Println(objectName)
+	}
+	return err
 }
 
 func (c HashObjectCommand) parseFlags(args []string) hashObjectParams {
@@ -36,24 +40,23 @@ func (c HashObjectCommand) parseFlags(args []string) hashObjectParams {
 	return hashObjectParams{*writePtr, filePath}
 }
 
-func (c HashObjectCommand) runWithParams(p hashObjectParams) error {
+func (c HashObjectCommand) runWithParams(p hashObjectParams) (string, error) {
 	fileContent, err := os.ReadFile(p.FilePath)
 	if err != nil {
-		return errors.New(fmt.Sprintf("Failed to read file: %s", err.Error()))
+		return "", errors.New(fmt.Sprintf("Failed to read file: %s", err.Error()))
 	}
 
 	object := Object{"blob", fileContent}
 	objectName, objectBytes, err := object.Marshal()
 	if err != nil {
-		return errors.New(fmt.Sprintf("Error while encoding an object %s", err.Error()))
+		return "", errors.New(fmt.Sprintf("Error while encoding an object %s", err.Error()))
 	}
 
 	if p.Write {
 		if err := WriteObject(objectName, objectBytes); err != nil {
-			return errors.New(fmt.Sprintf("Error while writing an object %s", err.Error()))
+			return "", errors.New(fmt.Sprintf("Error while writing an object %s", err.Error()))
 		}
 	}
 
-	fmt.Println(objectName)
-	return nil
+	return objectName, nil
 }
