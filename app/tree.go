@@ -3,10 +3,12 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"encoding/hex"
+	"fmt"
 	"io"
 	"os"
 )
+
+const OBJECT_TYPE_TREE = "tree"
 
 const (
 	MODE_FILE = "100644" // normal file mode
@@ -18,15 +20,19 @@ const (
 type TreeItem struct {
 	Mode     string
 	Filename string
-	Hash     string
+	Hash     []byte
 }
 
 type Tree struct {
 	Items []TreeItem
 }
 
-func (t Tree) Marshal() {
-	// TODO
+func (t Tree) Marshal() []byte {
+	content := ""
+	for _, item := range t.Items {
+		content += fmt.Sprintf("%s %s\x00%s", item.Mode, item.Filename, item.Hash)
+	}
+	return []byte(content)
 }
 
 func FileInfoToGitMode(info os.FileInfo) string {
@@ -72,7 +78,8 @@ func ReadTree(hash string) (Tree, error) {
 		treeItem := TreeItem{
 			mode[:len(mode)-1],         // Remove the trailing null byte
 			filename[:len(filename)-1], // Remove the trailing null byte
-			hex.EncodeToString([]byte(targetHash))}
+			targetHash,
+		}
 		tree.Items = append(tree.Items, treeItem)
 	}
 

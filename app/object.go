@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"compress/zlib"
 	"crypto/sha1"
-	"encoding/hex"
 	"fmt"
 	"io"
 	"os"
@@ -73,17 +72,16 @@ func WriteObject(objectName string, content []byte) error {
 	return os.WriteFile(objectPath, content, 0644)
 }
 
-func (o Object) Marshal() (string, []byte, error) {
+func (o Object) Marshal() ([]byte, []byte, error) {
 	var b bytes.Buffer
 	hasher := sha1.New()
 	zlibWriter := zlib.NewWriter(&b)
 	w := io.MultiWriter(zlibWriter, hasher)
 
-	fmt.Fprintf(w, "blob %d", len(o.content))
+	fmt.Fprintf(w, "%s %d", o.type_, len(o.content))
 	w.Write([]byte{0})
 	w.Write(o.content)
 	zlibWriter.Close()
 
-	hashStr := hex.EncodeToString(hasher.Sum(nil))
-	return hashStr, b.Bytes(), nil
+	return hasher.Sum(nil), b.Bytes(), nil
 }

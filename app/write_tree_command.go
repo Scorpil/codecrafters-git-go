@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"os"
@@ -45,21 +46,21 @@ func (c WriteTreeCommand) Run(args []string) error {
 
 	hash, err := c.runWithParams(writeTreeParams{wd})
 	if err == nil {
-		fmt.Println(hash)
+		fmt.Println(hex.EncodeToString(hash))
 	}
 	return err
 }
 
-func (c WriteTreeCommand) runWithParams(p writeTreeParams) (string, error) {
+func (c WriteTreeCommand) runWithParams(p writeTreeParams) ([]byte, error) {
 	fileInfos, err := readDir(p.dir)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	treeItems := make([]TreeItem, 0, len(fileInfos))
 	for _, fileInfo := range fileInfos {
 		gitMode := FileInfoToGitMode(fileInfo)
-		var hash string
+		var hash []byte
 		if gitMode == MODE_FILE {
 			hashObjectCommand := HashObjectCommand{}
 			hash, err = hashObjectCommand.runWithParams(hashObjectParams{
@@ -67,7 +68,7 @@ func (c WriteTreeCommand) runWithParams(p writeTreeParams) (string, error) {
 				FilePath: filepath.Join(p.dir, fileInfo.Name()),
 			})
 			if err != nil {
-				return "", err
+				return nil, err
 			}
 		}
 		if gitMode == MODE_DIR {
@@ -76,7 +77,7 @@ func (c WriteTreeCommand) runWithParams(p writeTreeParams) (string, error) {
 				dir: filepath.Join(p.dir, fileInfo.Name()),
 			})
 			if err != nil {
-				return "", err
+				return nil, err
 			}
 		}
 		treeItems = append(treeItems, TreeItem{
@@ -86,9 +87,17 @@ func (c WriteTreeCommand) runWithParams(p writeTreeParams) (string, error) {
 		})
 	}
 
-	_ = Tree{treeItems}
+	tree := Tree{treeItems}
+	treeBytes := tree.Marshal()
 
-	// TODO
+	object := Object{OBJECT_TYPE_TREE, treeBytes}
 
-	return "", nil
+	hash, objectBytes, err := object.Marshal()
+	if err != nil {
+		return nil, nil
+	}
+	hashStr := hex.EncodeToString(hash)
+	WriteObject(hashStr, objectBytes)
+
+	return hash, nil
 }
