@@ -14,6 +14,7 @@ type Commit struct {
 	Message   string
 }
 
+// Marshall converts commit content into its byte representations
 func (c Commit) Marshal() []byte {
 	content := fmt.Sprintf("tree %s\n", hex.EncodeToString(c.TreeSha))
 	content += fmt.Sprintf("parent %s\n", hex.EncodeToString(c.ParentSha))

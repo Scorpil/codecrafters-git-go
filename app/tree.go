@@ -35,6 +35,8 @@ func (t Tree) Marshal() []byte {
 	return []byte(content)
 }
 
+// git only supports a subset of possible file modes
+// FileInfoToGitMode selects applicable git file mode for a file
 func FileInfoToGitMode(info os.FileInfo) string {
 	if info.IsDir() {
 		return MODE_DIR
@@ -44,6 +46,8 @@ func FileInfoToGitMode(info os.FileInfo) string {
 
 }
 
+// ReadTree reads a tree object file from the filesystem
+// and converts them to Tree struct
 func ReadTree(hash string) (Tree, error) {
 	object, err := ReadObject(hash)
 	if err != nil {

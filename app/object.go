@@ -17,10 +17,13 @@ type Object struct {
 	content []byte
 }
 
+// getObjectPath returns a full relative path to an object file
 func getObjectPath(objectName string) string {
 	return filepath.Join(GIT_BASE, OBJECTS, objectName[0:2], objectName[2:])
 }
 
+// ReadObject reads an object file from a filesystem
+// and decodes it into Object struct
 func ReadObject(objectName string) (Object, error) {
 	objectPath := getObjectPath(objectName)
 	if _, err := os.Stat(objectPath); err != nil {
@@ -64,6 +67,7 @@ func ReadObject(objectName string) (Object, error) {
 	return Object{type_, content}, nil
 }
 
+// WriteObject stores an object in filesystem
 func WriteObject(objectName string, content []byte) error {
 	objectPath := getObjectPath(objectName)
 	if err := os.MkdirAll(filepath.Dir(objectPath), 0755); err != nil {
@@ -72,6 +76,9 @@ func WriteObject(objectName string, content []byte) error {
 	return os.WriteFile(objectPath, content, 0644)
 }
 
+// Marshall converts object to its binary representation
+// returns binary hash as byte slice, content byte slice
+// and error if present
 func (o Object) Marshal() ([]byte, []byte, error) {
 	var b bytes.Buffer
 	hasher := sha1.New()
